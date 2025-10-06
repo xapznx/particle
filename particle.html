@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>虹色花火パーティクル軌跡</title>
+    <style>
+        body {
+            background-color: #000;
+            overflow: hidden;
+            margin: 0;
+            cursor: none;
+        }
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(0);
+            transition: transform 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 1.8s ease-out;
+            will-change: transform, opacity;
+            box-shadow: 0 0 15px 8px;
+        }
+        .sparkle-burst {
+            animation: burst 0.6s ease-out forwards;
+        }
+        @keyframes burst {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+                box-shadow: 0 0 15px 8px;
+            }
+            100% {
+                transform: scale(3.5);
+                opacity: 0;
+                box-shadow: 0 0 30px 15px rgba(255, 255, 255, 0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        const colors = ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#9400d3'];
+        let colorIndex = 0;
+        let particleCount = 0;
+        const burstInterval = 10;
+
+        document.addEventListener('mousemove', (e) => {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            document.body.appendChild(particle);
+
+            const size = Math.random() * 10 + 5;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.left = `${e.clientX}px`;
+            particle.style.top = `${e.clientY}px`;
+            particle.style.backgroundColor = colors[colorIndex];
+            particle.style.boxShadow = `0 0 15px 8px ${colors[colorIndex]}`;
+
+            colorIndex = (colorIndex + 1) % colors.length;
+
+            if (particleCount % burstInterval === 0) {
+                particle.classList.add('sparkle-burst');
+                particle.style.transition = 'none';
+                setTimeout(() => {
+                    particle.remove();
+                }, 600);
+            } else {
+                setTimeout(() => {
+                    particle.style.opacity = '1';
+                    particle.style.transform = 'scale(1)';
+                }, 10);
+
+                setTimeout(() => {
+                    particle.style.opacity = '0';
+                    particle.style.transform = 'scale(0)';
+                    particle.addEventListener('transitionend', () => {
+                        particle.remove();
+                    });
+                }, 1800);
+            }
+            particleCount++;
+        });
+    </script>
+</body>
+</html>
