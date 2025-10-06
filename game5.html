@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ラッキーカラー診断</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="container">
+        <h1> ラッキーカラー診断アプリ </h1>
+
+        <div class="input-section">
+            <label for="date-input">日付を入力してください:</label>
+            <input type="date" id="date-input">
+        </div>
+
+        <button onclick="displayLuckyColor()">診断する</button>
+
+        <div id="result-box">
+            <p id="date-display"></p>
+            <div id="color-display">
+                <span id="color-name">ここにラッキーカラーが表示されます</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
