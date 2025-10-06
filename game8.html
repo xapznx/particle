@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ラッキーカラー診断</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #e0f7fa;
+        }
+
+        #container {
+            background-color: white;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            width: 350px;
+        }
+
+        h1 {
+            color: #00796B;
+            margin-bottom: 30px;
+            font-size: 26px;
+        }
+
+        .input-section {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        #date-input {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 2px solid #B2DFDB;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #FFC107;
+            color: #333;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background-color: #FFB300;
+        }
+
+        #result-box {
+            border-top: 1px solid #E0E0E0;
+            padding-top: 20px;
+        }
+
+        #date-display {
+            font-size: 18px;
+            color: #00BCD4;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        #color-display {
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            min-height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #9E9E9E;
+            transition: background-color 0.5s;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>ラッキーカラー診断アプリ</h1>
+
+        <div class="input-section">
+            <label for="date-input">日付を入力してください:</label>
+            <input type="date" id="date-input">
+        </div>
+
+        <button onclick="displayLuckyColor()">診断する</button>
+
+        <div id="result-box">
+            <p id="date-display"></p>
+            <div id="color-display">
+                <span id="color-name">ここにラッキーカラーが表示されます</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM要素の取得
+        const dateInput = document.getElementById('date-input');
+        const dateDisplay = document.getElementById('date-display');
+        const colorDisplayBox = document.getElementById('color-display');
+        const colorNameSpan = document.getElementById('color-name');
+
+        /**
+         * 簡易的なハッシュ関数 (日付に基づいて乱数の種を生成)
+         * 同じ日付には必ず同じ色を割り当てるために使用
+         * @param {string} str - 日付文字列 (例: 2025-10-06)
+         * @returns {number} - 0から16777215の間の数値
+         */
+        function simpleHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash |= 0; // 32bit整数に変換
+            }
+            // 0から16777215 (FFFFFF) の範囲に収める
+            return Math.abs(hash) % 16777216; 
+        }
+
+        /**
+         * 整数を16進数のカラーコードに変換する
+         * @param {number} int - 0から16777215の間の整数
+         * @returns {string} - 例: "#A3B7C1"
+         */
+        function intToHexColor(int) {
+            let hexColor = int.toString(16);
+            // 6桁になるまで '0' を前に付ける
+            while (hexColor.length < 6) {
+                hexColor = "0" + hexColor;
+            }
+            return "#" + hexColor.toUpperCase();
+        }
+
+        /**
+         * 背景色に応じて、文字色を黒か白に決定する（見やすくするため）
+         * @param {string} hexColor - 16進数カラーコード（例: #RRGGBB）
+         * @returns {string} - 'black' または 'white'
+         */
+        function getContrastTextColor(hexColor) {
+            const hex = hexColor.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+
+            // 輝度を計算 (標準的なYIQ輝度計算)
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            
+            // 輝度が140より低い場合は暗い色と判定し、白文字にする
+            return (brightness > 140) ? '#333' : 'white'; 
+        }
+
+
+        /**
+         * メインの処理: 日付に基づいたランダムなラッキーカラーを表示する
+         */
+        function displayLuckyColor() {
+            const dateString = dateInput.value;
+
+            if (!dateString) {
+                // 日付が入力されていない場合
+                alert("日付を選択してください！");
+                return;
+            }
+
+            // 1. 日付文字列から固有の数値（ハッシュ）を生成
+            const uniqueInt = simpleHash(dateString); 
+            
+            // 2. 数値を16進数カラーコードに変換
+            const luckyColorCode = intToHexColor(uniqueInt);
+            
+            // 3. 選択された日付の曜日を取得し、表示用に使用
+            const selectedDate = new Date(dateString);
+            // タイムゾーンのズレを考慮して正確な日付を取得
+            const localDate = new Date(selectedDate.getTime() + selectedDate.getTimezoneOffset() * 60000); 
+            const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
+            const dayOfWeek = dayNames[localDate.getDay()];
+            
+            // ------------------------------------
+            // 結果表示エリアの更新
+            // ------------------------------------
+            
+            // 日付を表示
+            const formattedDate = `${localDate.getFullYear()}年 ${localDate.getMonth() + 1}月 ${localDate.getDate()}日`;
+            dateDisplay.textContent = `${formattedDate} (${dayOfWeek}) のラッキーカラーは...`;
+
+            // カラーボックスの背景色を更新
+            colorDisplayBox.style.backgroundColor = luckyColorCode;
+            
+            // カラーコードの文字をボックス内に表示
+            colorNameSpan.textContent = luckyColorCode;
+
+            // 背景色に応じて、文字色を黒か白に設定
+            const textColor = getContrastTextColor(luckyColorCode);
+            colorNameSpan.style.color = textColor;
+            
+            // 文字色に応じて影を調整 (白文字の時だけ影を付けると見やすい)
+            colorDisplayBox.style.textShadow = (textColor === 'white') ? '1px 1px 2px rgba(0,0,0,0.8)' : 'none';
+        }
+    </script>
+</body>
+</html>
