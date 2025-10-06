@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ランダム・ラッキーカラー診断</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="container">
+        <h1> ランダム・ラッキーカラー診断 </h1>
+
+        <p>ボタンを押すと、1677万色の中から今日のラッキーカラーが選ばれます！</p>
+        
+        <button onclick="displayRandomLuckyColor()">今日のラッキーカラーを表示</button>
+
+        <div id="result-box">
+            <div id="color-display">
+                <span id="color-name">#000000</span>
+            </div>
+            <p id="message"></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+body {
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f7f7f7;
+}
+
+#container {
+    background-color: white;
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 350px;
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 30px;
+    font-size: 24px;
+}
+
+p {
+    margin-bottom: 25px;
+}
+
+button {
+    background-color: #FF7043; /* オレンジ系に変更 */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background-color 0.3s;
+    margin-bottom: 30px;
+}
+
+button:hover {
+    background-color: #f4511e;
+}
+
+#result-box {
+    border-top: 2px dashed #ccc;
+    padding-top: 20px;
+}
+
+#color-display {
+    padding: 20px;
+    border-radius: 8px;
+    font-size: 24px;
+    font-weight: bold;
+    min-height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #ccc;
+    transition: background-color 0.5s;
+}
+
+#color-name {
+    /* カラーコードをしっかり表示するため、文字サイズを調整 */
+    font-size: 28px;
+    color: white; 
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* どんな色の上でも見やすいように影を追加 */
+}
+// DOM要素の取得
+const colorDisplayBox = document.getElementById('color-display');
+const colorNameSpan = document.getElementById('color-name');
+const messageDisplay = document.getElementById('message');
+
+/**
+ * 完全にランダムな16進数のカラーコードを生成する
+ * 16進数FF (255)が6桁で表現され、全体で 256*256*256 = 16,777,216通り
+ * @returns {string} 例: "#A3B7C1"
+ */
+function getRandomHexColor() {
+    // 1. 0から16777215 (FFFFF) の間のランダムな整数を生成
+    // Math.random()は 0以上1未満の乱数を生成
+    const randomInt = Math.floor(Math.random() * 16777215); 
+    
+    // 2. 整数を16進数文字列に変換
+    let hexColor = randomInt.toString(16);
+
+    // 3. 16進数文字列が6桁になるように、前に '0' をパディング（例: "ff" -> "0000ff"）
+    while (hexColor.length < 6) {
+        hexColor = "0" + hexColor;
+    }
+    
+    // 4. '#' を付けて返す
+    return "#" + hexColor.toUpperCase();
+}
+
+/**
+ * カラーコードが暗いかどうかを判定し、文字色を決定する
+ * (コントラストを確保するため)
+ * @param {string} hexColor - 16進数カラーコード（例: #RRGGBB）
+ * @returns {string} - 'black' または 'white'
+ */
+function getContrastTextColor(hexColor) {
+    // RGBの輝度を計算する (YIQの公式を利用)
+    // 0.299 * R + 0.587 * G + 0.114 * B
+    
+    // #を削除
+    const hex = hexColor.replace('#', '');
+    
+    // R, G, B の値を10進数に変換
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    
+    // 輝度が特定のしきい値（例: 128）より低い場合は暗い色と判定し、白文字にする
+    return (brightness > 140) ? '#333' : 'white'; 
+}
+
+
+/**
+ * メインの処理: ラッキーカラーを生成し表示する
+ */
+function displayRandomLuckyColor() {
+    // ランダムなカラーコードを生成
+    const luckyColorCode = getRandomHexColor();
+    
+    // 1. カラーボックスの背景色を更新
+    colorDisplayBox.style.backgroundColor = luckyColorCode;
+    
+    // 2. カラーコードの文字をボックス内に表示
+    colorNameSpan.textContent = luckyColorCode;
+
+    // 3. 背景色に応じて、文字色を黒か白に設定
+    const textColor = getContrastTextColor(luckyColorCode);
+    colorNameSpan.style.color = textColor;
+    colorDisplayBox.style.textShadow = (textColor === 'white') ? '1px 1px 2px rgba(0,0,0,0.8)' : 'none';
+    
+    // 4. メッセージを表示
+    messageDisplay.textContent = `今日のラッキーカラーは「${luckyColorCode}」です！この色で一日を彩りましょう。`;
+}
+
+// アプリ起動時に一度実行し、初期表示を行う
+displayRandomLuckyColor();
