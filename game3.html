@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ジャンプゲーム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="player"></div> 
+        </div>
+    <div id="score">スコア: 0</div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+    font-family: sans-serif;
+}
+
+#game-container {
+    width: 600px;
+    height: 200px;
+    border: 3px solid black;
+    background-color: #c8e6c9; /* 地面の色 */
+    position: relative;
+    overflow: hidden; /* 障害物がコンテナ外に出るのを隠す */
+}
+
+#player {
+    position: absolute;
+    bottom: 0;
+    left: 50px;
+    font-size: 40px;
+    transition: transform 0.2s; /* ジャンプアニメーション用 */
+}
+
+.obstacle {
+    position: absolute;
+    bottom: 0;
+    right: -20px; /* 最初は画面外に配置 */
+    width: 20px;
+    height: 30px;
+    background-color: #e57373; /* 障害物の色 */
+    line-height: 30px;
+    text-align: center;
+    font-size: 14px;
+    color: white;
+}
+
+#score {
+    margin-top: 20px;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* ジャンプ時のスタイル */
+.jump {
+    transform: translateY(-80px); /* 80px上に移動 */
+}
+// ゲーム要素の取得
+const player = document.getElementById('player');
+const gameContainer = document.getElementById('game-container');
+const scoreDisplay = document.getElementById('score');
+
+// ゲームの状態
+let isJumping = false;
+let gameInterval;
+let score = 0;
+let obstacleSpeed = 4; // 障害物の移動速度 (大きいほど速い)
+
+// ----------------------------------------------------
+// 1. 走者のジャンプ処理
+// ----------------------------------------------------
+
+function jump() {
+    if (!isJumping) {
+        isJumping = true;
+        
+        // CSSクラスを追加してジャンプ
+        player.classList.add('jump'); 
+
+        // 0.5秒後に着地（クラスを削除）
+        setTimeout(() => {
+            player.classList.remove('jump');
+            isJumping = false;
+        }, 500); 
+    }
+}
+
+// マウスをクリックしたらジャンプ
+document.addEventListener('mousedown', jump);
+// スペースキーを押してもジャンプ
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        jump();
+    }
+});
+
+
+// ----------------------------------------------------
+// 2. 障害物の生成
+// ----------------------------------------------------
+
+function createObstacle() {
+    const obstacle = document.createElement('div');
+    obstacle.classList.add('obstacle');
+    obstacle.style.height = `${Math.floor(Math.random() * 20) + 30}px`; // 30pxから50pxのランダムな高さ
+    gameContainer.appendChild(obstacle);
+    
+    // 障害物の移動
+    let position = 600; // コンテナ幅と同じ
+    
+    const moveInterval = setInterval(() => {
+        // ゲームオーバーの場合は処理を停止
+        if (!gameInterval) {
+            clearInterval(moveInterval);
+            gameContainer.removeChild(obstacle);
+            return;
+        }
+
+        position -= obstacleSpeed;
+        obstacle.style.right = `${position}px`;
+
+        // 画面外に出たら削除し、スコア加算
+        if (position < -20) {
+            clearInterval(moveInterval);
+            gameContainer.removeChild(obstacle);
+            score++;
+            scoreDisplay.textContent = `スコア: ${score}`;
+        }
+        
+        // 衝突判定チェック
+        checkCollision(obstacle, moveInterval);
+
+    }, 20); // 20msごとに更新
+}
+
+// ランダムな間隔で障害物を生成
+function startObstacleGeneration() {
+    // 1秒から3秒の間でランダムな遅延を設定
+    const delay = Math.random() * 2000 + 1000; 
+    
+    setTimeout(() => {
+        if (gameInterval) {
+            createObstacle();
+            startObstacleGeneration(); // 次の障害物を予約
+        }
+    }, delay);
+}
+
+
+// ----------------------------------------------------
+// 3. 衝突判定とゲームオーバー処理
+// ----------------------------------------------------
+
+function checkCollision(obstacle, moveInterval) {
+    // 走者と障害物の位置情報を取得
+    const playerRect = player.getBoundingClientRect();
+    const obstacleRect = obstacle.getBoundingClientRect();
+
+    // 衝突条件 (矩形同士の交差)
+    if (
+        playerRect.left < obstacleRect.right &&
+        playerRect.right > obstacleRect.left &&
+        playerRect.top < obstacleRect.bottom &&
+        playerRect.bottom > obstacleRect.top
+    ) {
+        // 衝突した場合、ゲームオーバー
+        clearInterval(moveInterval);
+        endGame();
+    }
+}
+
+function endGame() {
+    clearInterval(gameInterval); // メインループを停止
+    gameInterval = null; 
+
+    alert(`ゲームオーバー！あなたのスコアは ${score} です。\nもう一度プレイするにはページをリロードしてください。`);
+}
+
+
+// ----------------------------------------------------
+// 4. ゲーム開始
+// ----------------------------------------------------
+
+function startGame() {
+    score = 0;
+    scoreDisplay.textContent = `スコア: ${score}`;
+    
+    // ゲームがアクティブであることを示すためのフラグ
+    gameInterval = true; 
+    
+    // 最初の障害物生成を開始
+    startObstacleGeneration();
+}
+
+// ゲーム開始
+startGame();
