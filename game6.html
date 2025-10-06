@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ラッキーカラー診断</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="container">
+        <h1> ラッキーカラー診断アプリ </h1>
+
+        <div class="input-section">
+            <label for="date-input">日付を入力してください:</label>
+            <input type="date" id="date-input">
+        </div>
+
+        <button onclick="displayLuckyColor()">診断する</button>
+
+        <div id="result-box">
+            <p id="date-display"></p>
+            <div id="color-display">
+                <span id="color-name">ここにラッキーカラーが表示されます</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+body {
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f7f7f7;
+}
+
+#container {
+    background-color: white;
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 350px;
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 30px;
+    font-size: 24px;
+}
+
+.input-section {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #555;
+}
+
+#date-input {
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+}
+
+button {
+    background-color: #4CAF50; /* 緑色 */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background-color 0.3s;
+    margin-bottom: 30px;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#result-box {
+    border-top: 2px dashed #ccc;
+    padding-top: 20px;
+}
+
+#date-display {
+    font-size: 18px;
+    color: #007bff; /* 青色 */
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+#color-display {
+    padding: 15px;
+    border-radius: 8px;
+    color: white; /* テキストは白で統一 */
+    font-size: 24px;
+    font-weight: bold;
+    min-height: 50px; /* ボックスの高さを確保 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #ccc; /* 初期背景色 */
+    transition: background-color 0.5s;
+}
+// 曜日と対応するラッキーカラーのデータ
+// [曜日インデックス (0=日, 1=月, ...), ラッキーカラー名, カラーコード]
+const LUCKY_COLORS = [
+    { name: "レッド", code: "#E53935", day: "日曜日" }, // 0: 日曜日
+    { name: "ホワイト", code: "#FFFFFF", day: "月曜日", textColor: "#333" }, // 1: 月曜日 (テキストを黒に)
+    { name: "ブルー", code: "#1E88E5", day: "火曜日" }, // 2: 火曜日
+    { name: "グリーン", code: "#4CAF50", day: "水曜日" }, // 3: 水曜日
+    { name: "イエロー", code: "#FFD600", day: "木曜日", textColor: "#333" }, // 4: 木曜日 (テキストを黒に)
+    { name: "ピンク", code: "#FF4081", day: "金曜日" }, // 5: 金曜日
+    { name: "パープル", code: "#9C27B0", day: "土曜日" }  // 6: 土曜日
+];
+
+// DOM要素の取得
+const dateInput = document.getElementById('date-input');
+const dateDisplay = document.getElementById('date-display');
+const colorDisplayBox = document.getElementById('color-display');
+const colorNameSpan = document.getElementById('color-name');
+
+/**
+ * ユーザーが選択した日付に基づいてラッキーカラーを表示する
+ */
+function displayLuckyColor() {
+    const dateString = dateInput.value;
+
+    if (!dateString) {
+        // 日付が入力されていない場合
+        alert("日付を選択してください！");
+        return;
+    }
+
+    // Dateオブジェクトを作成
+    const selectedDate = new Date(dateString);
+    
+    // DateオブジェクトのgetTime()はUTCのミリ秒を返すため、
+    // タイムゾーンのズレで日付が変わるのを防ぐため、日付を1日進める処理
+    // この処理がないと、例えば日本時間で選んでもUTCでは前日と見なされ曜日がずれることがある
+    selectedDate.setDate(selectedDate.getDate() + 1);
+
+    // 曜日インデックスを取得 (0:日曜日, 1:月曜日, ...)
+    const dayIndex = selectedDate.getDay();
+
+    // 選択された日付のラッキーカラー情報を取得
+    const luckyColorInfo = LUCKY_COLORS[dayIndex];
+
+    // ------------------------------------
+    // 1. 結果表示エリアの更新
+    // ------------------------------------
+    
+    // 日付を表示
+    const formattedDate = `${selectedDate.getFullYear()}年 ${selectedDate.getMonth() + 1}月 ${selectedDate.getDate()}日`;
+    dateDisplay.textContent = `${formattedDate} (${luckyColorInfo.day}) のラッキーカラーは...`;
+
+    // カラーボックスのスタイルとテキストを更新
+    colorDisplayBox.style.backgroundColor = luckyColorInfo.code;
+    colorNameSpan.textContent = luckyColorInfo.name;
+
+    // 白や黄色の背景の場合、テキストカラーを黒にする（見やすくするため）
+    if (luckyColorInfo.textColor) {
+        colorDisplayBox.style.color = luckyColorInfo.textColor;
+    } else {
+        colorDisplayBox.style.color = 'white';
+    }
+}
