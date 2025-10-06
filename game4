@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ジャンプゲーム v2.0</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="player"></div>
+    </div>
+    <div id="status-panel">
+        <div id="score">スコア: 0</div>
+        <div id="message">クリックまたはスペースキーでジャンプ！</div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #e0f7fa;
+    font-family: 'Arial', sans-serif;
+}
+
+#game-container {
+    width: 600px;
+    height: 200px;
+    border: 5px solid #000;
+    border-bottom: 20px solid #4CAF50; /* 地面を表現 */
+    background-color: #81D4FA;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+#player {
+    position: absolute;
+    bottom: 0px; /* 地面の上に配置 */
+    left: 50px;
+    font-size: 50px;
+    line-height: 1; /* 文字の高さを調整 */
+    transition: transform 0.2s; /* ジャンプアニメーションを滑らかに */
+}
+
+/* ジャンプ時のスタイル */
+.jump {
+    transform: translateY(-100px); /* 100px上に移動 */
+}
+
+.obstacle {
+    position: absolute;
+    bottom: 0px; /* 地面の上に配置 */
+    width: 30px;
+    height: 40px;
+    background-color: #E53935; /* 赤い障害物 */
+    box-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+#status-panel {
+    margin-top: 20px;
+    display: flex;
+    gap: 30px;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+#message {
+    color: #0288D1;
+}
+// ゲーム要素の取得
+const player = document.getElementById('player');
+const gameContainer = document.getElementById('game-container');
+const scoreDisplay = document.getElementById('score');
+const messageDisplay = document.getElementById('message');
+
+// ゲーム定数と状態
+const PLAYER_X = 50;           // 走者の固定X座標
+const CONTAINER_WIDTH = 600;   // ゲームコンテナの幅
+const JUMP_DURATION = 500;     // ジャンプ時間 (ミリ秒)
+
+let isJumping = false;
+let gameActive = true;
+let score = 0;
+let obstacleSpeed = 5;         // 障害物の移動速度 (ピクセル/フレーム)
+let gameLoopInterval;
+
+// ----------------------------------------------------
+// 1. 走者のジャンプ処理
+// ----------------------------------------------------
+
+function jump() {
+    if (!gameActive || isJumping) {
+        return;
+    }
+
+    isJumping = true;
+    player.classList.add('jump'); 
+
+    // 指定時間後に着地（クラスを削除）
+    setTimeout(() => {
+        player.classList.remove('jump');
+        isJumping = false;
+    }, JUMP_DURATION); 
+}
+
+// ユーザー入力イベント
+document.addEventListener('mousedown', jump);
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        // Spaceキーのデフォルト動作（スクロールなど）を防止
+        e.preventDefault(); 
+        jump();
+    }
+});
+
+// ----------------------------------------------------
+// 2. 障害物の生成
+// ----------------------------------------------------
+
+function createObstacle() {
+    const obstacle = document.createElement('div');
+    obstacle.classList.add('obstacle');
+    
+    // 障害物の高さをランダムに設定
+    const height = Math.floor(Math.random() * 20) + 40; 
+    obstacle.style.height = `${height}px`;
+    obstacle.dataset.x = CONTAINER_WIDTH; // X座標をカスタムデータ属性で管理
+    
+    gameContainer.appendChild(obstacle);
+}
+
+// ランダムな間隔で障害物を生成するタイマー
+function startObstacleGeneration() {
+    if (!gameActive) return;
+    
+    // 1000ms (1秒) から 3000ms (3秒) の間でランダムな遅延
+    const delay = Math.random() * 2000 + 1000; 
+    
+    setTimeout(() => {
+        if (gameActive) {
+            createObstacle();
+            startObstacleGeneration(); // 次の生成を予約
+        }
+    }, delay);
+}
+
+// ----------------------------------------------------
+// 3. ゲームループ (動きと衝突判定のメイン処理)
+// ----------------------------------------------------
+
+function gameLoop() {
+    if (!gameActive) return;
+
+    // 走者の縦位置 (ジャンプ中か否か)
+    const playerBottom = isJumping ? 100 : 0; // jumpクラスのCSSと同期
+
+    // 全ての障害物を移動・判定する
+    document.querySelectorAll('.obstacle').forEach(obstacle => {
+        let x = parseInt(obstacle.dataset.x);
+        
+        // 移動
+        x -= obstacleSpeed;
+        obstacle.dataset.x = x;
+        obstacle.style.right = `${CONTAINER_WIDTH - x}px`;
+
+        // 衝突判定
+        // 走者の横幅は仮に50px、縦幅は50pxとします (絵文字のサイズに依存)
+        const PLAYER_SIZE = 50; 
+        const OBSTACLE_WIDTH = 30;
+        const OBSTACLE_HEIGHT = parseInt(obstacle.style.height);
+
+        // 衝突判定の条件
+        const horizontalOverlap = (x < PLAYER_X + PLAYER_SIZE) && (x + OBSTACLE_WIDTH > PLAYER_X);
+        const verticalOverlap = playerBottom < OBSTACLE_HEIGHT; 
+        
+        if (horizontalOverlap && verticalOverlap) {
+            // 衝突 -> ゲームオーバー
+            endGame();
+            return; 
+        }
+
+        // 障害物が走者を通り過ぎたらスコア加算
+        if (x < PLAYER_X && !obstacle.dataset.passed) {
+            score++;
+            scoreDisplay.textContent = `スコア: ${score}`;
+            obstacle.dataset.passed = 'true'; // 複数回加算を防ぐ
+        }
+        
+        // 画面外に出たら削除
+        if (x < -OBSTACLE_WIDTH) {
+            obstacle.remove();
+        }
+    });
+}
+
+// ----------------------------------------------------
+// 4. ゲームの開始・終了
+// ----------------------------------------------------
+
+function startGame() {
+    gameActive = true;
+    score = 0;
+    scoreDisplay.textContent = 'スコア: 0';
+    messageDisplay.textContent = 'ゲーム中...';
+
+    // 既存の障害物を全て削除
+    document.querySelectorAll('.obstacle').forEach(o => o.remove());
+
+    // メインゲームループを約16msごとに実行 (約60FPS)
+    gameLoopInterval = setInterval(gameLoop, 16); 
+    
+    // 障害物生成を開始
+    startObstacleGeneration();
+}
+
+function endGame() {
+    gameActive = false;
+    clearInterval(gameLoopInterval);
+    messageDisplay.textContent = 'GAME OVER! (リロードして再開)';
+
+    // ゲームオーバーの視覚的なフィードバック (例: 走者を停止)
+    player.style.animation = 'none';
+
+    alert(`ゲームオーバー！あなたのスコアは ${score} です。\nページをリロードしてもう一度プレイしてください。`);
+}
+
+// 最初にゲームを開始
+startGame();
