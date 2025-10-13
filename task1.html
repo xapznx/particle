@@ -1,0 +1,210 @@
+承知いたしました。日付を入力すると、森羅万象から**ランダム**に選ばれた「**今日のラッキーアイテム**」を表示するWebアプリを作成します。
+
+このアプリは、日付が変わるたびにラッキーアイテムも変わりますが、**同じ日付**であれば何度診断しても**同じアイテム**が表示されるように、日付を基にした**疑似乱数**を使用します。
+
+このコードを**すべてコピー**して、ファイル名を **`index.html`** として保存し、ブラウザで開いてください。
+
+-----
+
+## 🔮 今日のラッキーアイテム診断アプリ (`index.html`)
+
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ラッキーアイテム診断</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f4c3; /* 薄い緑黄色 */
+            color: #333;
+        }
+
+        #container {
+            background-color: white;
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 400px;
+        }
+
+        h1 {
+            color: #558b2f; /* 濃い緑 */
+            margin-bottom: 30px;
+            font-size: 26px;
+        }
+
+        .input-section {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        #date-input {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 2px solid #8bc34a;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #ff9800; /* オレンジ */
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            margin-bottom: 30px;
+        }
+
+        button:hover {
+            background-color: #f57c00;
+        }
+
+        #result-box {
+            border-top: 1px solid #e0e0e0;
+            padding-top: 20px;
+        }
+
+        #date-display {
+            font-size: 18px;
+            color: #689f38;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        #item-display {
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #fffde7; /* 非常に薄い黄色 */
+            border: 3px dashed #ffb74d; /* 軽いオレンジの点線 */
+            font-size: 30px;
+            font-weight: bold;
+            min-height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #d84315; /* 濃いオレンジ */
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>🌌 今日のラッキーアイテム診断 🍀</h1>
+
+        <div class="input-section">
+            <label for="date-input">日付を入力してください:</label>
+            <input type="date" id="date-input">
+        </div>
+
+        <button onclick="displayLuckyItem()">診断する</button>
+
+        <div id="result-box">
+            <p id="date-display"></p>
+            <div id="item-display">
+                <span id="item-name">診断ボタンを押してください</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 森羅万象から選ばれたランダムなアイテムのリスト
+        const ALL_THINGS = [
+            "苔むした石", "宇宙飛行士のヘルメット", "透明なサイコロ", "古代ギリシャの貨幣",
+            "一本の白い羽根", "空っぽのティーカップ", "雲のかけら", "猫のひげ",
+            "砂漠のガラス玉", "満月の写真", "誰かの古い日記", "四つ葉のクローバー",
+            "錆びた鍵", "銀河鉄道の切符", "音のしない鈴", "小人が作った靴",
+            "虹色のシャボン玉", "時を止めた懐中時計", "光るキノコ", "失くした記憶",
+            "風のささやき", "地球儀の南極点", "熱帯魚のうろこ", "ピラミッドの砂",
+            "目覚まし時計の針", "コーヒー豆", "折り鶴", "太陽の光の粒"
+        ];
+
+        // DOM要素の取得
+        const dateInput = document.getElementById('date-input');
+        const dateDisplay = document.getElementById('date-display');
+        const itemDisplayBox = document.getElementById('item-display');
+        const itemNameSpan = document.getElementById('item-name');
+
+        /**
+         * 日付文字列を基にした簡単なハッシュ（乱数の種）を生成する
+         * これにより、同じ日付には常に同じアイテムが選ばれる
+         * @param {string} str - 日付文字列 (例: 2025-10-13)
+         * @returns {number} - 0以上の整数
+         */
+        function simpleHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash |= 0; // 32bit整数に変換
+            }
+            return Math.abs(hash);
+        }
+
+        /**
+         * メインの処理: ラッキーアイテムを決定し、表示する
+         */
+        function displayLuckyItem() {
+            const dateString = dateInput.value;
+
+            if (!dateString) {
+                alert("日付を選択してください！");
+                return;
+            }
+
+            // 1. 日付からハッシュ値を生成
+            const hashValue = simpleHash(dateString); 
+            
+            // 2. ハッシュ値をアイテムリストのインデックスに変換
+            const itemIndex = hashValue % ALL_THINGS.length;
+            
+            // 3. ラッキーアイテムを決定
+            const luckyItem = ALL_THINGS[itemIndex];
+
+            // 4. 選択された日付の曜日を取得し、表示用に使用
+            const selectedDate = new Date(dateString);
+            // タイムゾーンのズレを考慮した正確な日付を取得
+            const localDate = new Date(selectedDate.getTime() + selectedDate.getTimezoneOffset() * 60000); 
+            const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
+            const dayOfWeek = dayNames[localDate.getDay()];
+            
+            // ------------------------------------
+            // 結果表示エリアの更新
+            // ------------------------------------
+            
+            // 日付を表示
+            const formattedDate = `${localDate.getFullYear()}年 ${localDate.getMonth() + 1}月 ${localDate.getDate()}日`;
+            dateDisplay.textContent = `${formattedDate} (${dayOfWeek}) のラッキーアイテムは...`;
+
+            // ラッキーアイテムを表示
+            itemNameSpan.textContent = luckyItem;
+            
+            // 視覚的なフィードバック
+            itemDisplayBox.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                itemDisplayBox.style.transform = 'scale(1)';
+            }, 100);
+        }
+    </script>
+</body>
+</html>
+```
